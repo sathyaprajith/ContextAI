@@ -1,4 +1,4 @@
-# ContextAI - WhatsApp Chat Analyzer
+# ContextAI
 
 A WhatsApp chat analysis platform with AI-powered summaries, intelligent bot responses, and multi-key load balancing. Analyzes group and individual chats using Google's Gemini 2.5 Flash, with support for image understanding and conversation memory.
 
