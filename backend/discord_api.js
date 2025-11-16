@@ -119,8 +119,15 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 2000) {
 }
 
 // Initialize Discord Bot
-const DISCORD_TOKEN =
-  "MTQzOTM5MjA4NTUzODExNTc0NA.GrUm6y.jlTilIXxgn2hU6znle5MkFJ6xUMOqgOciLzRCg";
+const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
+
+if (!DISCORD_TOKEN) {
+  console.error("❌ DISCORD_BOT_TOKEN not found in .env file");
+  console.log(
+    "⚠️  Please add DISCORD_BOT_TOKEN=your_token_here to backend/.env"
+  );
+  process.exit(1);
+}
 
 const discordClient = new Client({
   intents: [

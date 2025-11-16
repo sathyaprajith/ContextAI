@@ -1,5 +1,53 @@
 [
   {
+    "chatId": "summary_meet_1763269170841_1763271153650",
+    "chatName": "📄 test meet",
+    "summary": "Here's a concise summary of the Google Meet transcript:\n\n**📊 Overview**\n*   **Meeting purpose:** Sync progress on ContextAI for an upcoming hackathon demo.\n*   **Key participants:** Alice, Bob, Charlie, Diana.\n\n**📋 Main Topics**\n*   **WhatsApp Integration:** Stabilized, fetching 340 chats consistently. Puppeteer memory issue resolved with auto-restart and reduced overhead; sessions persist.\n*   **RAG & Event Extraction:** Retrieval works, but event extraction misses some decisions, particularly with indirect phrasing. A rule-based post-processor will be added to address this.\n*   **Deep Research Mode:** Takes ~12 seconds, considered acceptable for the demo given the output (1000-word intelligence summary).\n*   **Demo Showcase:** Will feature WhatsApp deep analysis, Q&A (\"Who is doing API integration?\"), and a unified dashboard view.\n*   **Discord Integration:** UI is ready, backend is not. Will be marked as \"Planned\" for roadmap clarity.\n*   **Gemini API:** Rotation with three keys now supports 180 requests per minute.\n*   **pgvector:** Search is very fast, queries resolve under 100ms with 2000 embeddings.\n*   **Embeddings:** Decision to stay with 768-dim embeddings for cost, speed, and sufficient semantic capability.\n*   **UI Performance:** Shader background is visually appealing but heavy on low-end laptops. GPU detection will be implemented to fallback to a static gradient if needed. Retro theme is well-received.\n*   **Pitch Deck Emphasis:** Unified multi-platform knowledge, RAG + pgvector, 340 real WhatsApp chats, production-ready features, and users not needing to change behavior.\n*   **Demo Transcript Sample:** Need a clean sample for testing the Meets analyzer.\n\n**✅ Action Items**\n*   **Charlie:** Add a rule-based post-processor for event extraction to identify decisions based on speaker agreement.\n*   **Bob:** Prepare mock transcripts for testing the Meets analyzer.\n*   **Alice:** Schedule a follow-up meeting for tonight to rehearse the 3-minute pitch.\n\n**💡 Key Takeaways**\n*   Significant progress has been made on core features like WhatsApp integration and RAG, addressing key technical challenges.\n*   The team is focused on a polished and impactful demo for the hackathon, prioritizing key features and user experience.\n*   Strategic decisions were made regarding embedding dimensions and UI performance optimization.\n*   Clear messaging for the pitch deck will highlight the project's strengths and value proposition.\n*   The importance of showcasing user-friendly aspects (no behavior change) is recognized.",
+    "stats": {
+      "date": "2025-11-16T04:59:30.845Z",
+      "type": "uploaded"
+    },
+    "source": "meets",
+    "timestamp": "2025-11-16T05:32:33.652Z"
+  },
+  {
+    "chatId": "discord_1439391889752068160_1439391890301653225_1763271145560",
+    "chatName": "#general (Sathwik Sri harsha's server)",
+    "summary": "Here's a concise summary of the Discord channel conversation:\n\n**📊 Overview**\nThe conversation in the #general channel of Sathwik Sri harsha's server is fragmented and appears to be a mix of random typing, greetings, and some potentially offensive remarks, with no clear overarching purpose or context established.\n\n**📋 Key Topics**\n*   Random typing and exclamations.\n*   Introductions and greetings.\n*   Mentions of \"Ashraf\" and \"java\".\n*   A potentially offensive remark.\n\n**✅ Decisions & Action Items**\nNone.\n\n**👥 Active Participants**\n*   sathwiksriharsha\n*   dr4cule (also introduces themselves as Arsh/Ashraf)\n*   regularbug._95105 (mentions Ashraf)\n\n**💡 Highlights**\n*   \"f u\" (from sathwiksriharsha)\n*   \"Ashraf codes java\" (repeatedly from regularbug._95105)\n*   \"Ashraf go bring shit\" (from regularbug._95105)",
+    "stats": {
+      "messageCount": 19,
+      "server": "Sathwik Sri harsha's server",
+      "channel": "general",
+      "date": "2025-11-16T05:32:25.564Z"
+    },
+    "source": "discord",
+    "timestamp": "2025-11-16T05:32:25.564Z"
+  },
+  {
+    "chatId": "summary_meet_1763269170841_1763269177311",
+    "chatName": "📄 test meet",
+    "summary": "Here's a concise summary of the Google Meet transcript:\n\n**📊 Overview**\n*   **Meeting purpose:** Sync on ContextAI progress ahead of a hackathon, focusing on demo readiness and key selling points.\n*   **Key participants:** Alice (facilitator), Bob, Charlie, Diana.\n\n**📋 Main Topics**\n*   **WhatsApp Integration:** Bob has stabilized fetching all 340 chats and fixed the Puppeteer memory issue with an auto-restart wrapper and reduced headless overhead.\n*   **RAG/Event Extraction:** Diana reported that RAG retrieval works, but event extraction misses some indirect decisions. A rule-based post-processor will be added to address this.\n*   **Deep Research Mode:** The 12-second load time is deemed acceptable for the hackathon demo.\n*   **Demo Content:** To be showcased are WhatsApp deep analysis, a specific Q&A (\"Who is doing API integration?\"), and a unified dashboard view.\n*   **Discord Integration:** The UI is ready, but the backend is not. It will be marked as \"Planned\" for roadmap clarity.\n*   **API Performance:** Gemini API rotation supports 180 requests/minute, and pgvector search is fast (under 100ms for 2000 embeddings).\n*   **Embeddings:** Decision to stick with 768-dim embeddings for cost and speed.\n*   **UI Performance:** Shader background may be heavy on low-end laptops; a GPU detection fallback to a static gradient will be implemented. The retro theme is well-received.\n*   **Pitch Deck Emphasis:** Unified multi-platform knowledge, RAG + pgvector, 340 real WhatsApp chats, and production-ready features.\n*   **User Behavior:** ContextAI captures meaning without users changing their behavior (WhatsApp + Meets).\n*   **Meets Analyzer:** A clean demo transcript sample is needed for testing.\n\n**✅ Action Items**\n*   **Add rule-based post-processor for event extraction:** Charlie and Diana (implied collaboration).\n*   **Prepare mock transcripts for Meets analyzer testing:** Bob.\n*   **Rehearse the 3-minute pitch:** All (tonight).\n\n**💡 Key Takeaways**\n*   Significant progress has been made on core features, particularly WhatsApp integration and RAG.\n*   Potential areas for improvement (event extraction, UI performance) have clear solutions identified.\n*   The team is strategizing effectively for the hackathon demo and pitch deck, highlighting strong selling points.\n*   A clear understanding of what needs to be demonstrated and emphasized for the hackathon.\n*   Follow-ups needed: A clean demo transcript sample and pitch rehearsal tonight.",
+    "stats": {
+      "date": "2025-11-16T04:59:30.845Z",
+      "type": "uploaded"
+    },
+    "source": "meets",
+    "timestamp": "2025-11-16T04:59:37.312Z"
+  },
+  {
+    "chatId": "discord_1439391889752068160_1439391890301653225_1763269146469",
+    "chatName": "#general (Sathwik Sri harsha's server)",
+    "summary": "Here's a concise summary of the Discord conversation:\n\n**📊 Overview**\nThis conversation appears to be a casual interaction within a general Discord channel. The early messages are largely nonsensical, followed by introductions and some repetitive statements about someone named Ashraf coding in Java.\n\n**📋 Key Topics**\n*   Introductions and greetings.\n*   The repetitive assertion that \"Ashraf codes Java.\"\n\n**✅ Decisions & Action Items**\nNone.\n\n**👥 Active Participants**\n*   sathwiksriharsha (appears to send random characters early on)\n*   dr4cule (introduces themselves as Arsh and asks for a name)\n*   regularbug._95105 (repeatedly states Ashraf codes Java, interacts with the bot, and uses strong language)\n*   Bottt (sends an attachment/embed, but no context is provided)\n\n**💡 Highlights**\n*   \"Ashraf codes java\" (repeated multiple times)\n*   \"Ashraf go bring shit\" (a notable, albeit crude, statement)",
+    "stats": {
+      "messageCount": 19,
+      "server": "Sathwik Sri harsha's server",
+      "channel": "general",
+      "date": "2025-11-16T04:59:06.473Z"
+    },
+    "source": "discord",
+    "timestamp": "2025-11-16T04:59:06.473Z"
+  },
+  {
     "chatId": "summary_meet_1763267414458_1763267421200",
     "chatName": "📄 gear 5 meet",
     "summary": "Here's a concise summary of the Google Meet transcript:\n\n**📊 Overview**\n*   **Meeting Purpose:** Final review of the updated dashboard before deployment.\n*   **Key Participants:** Alice, Bob, Charlie, Diana.\n\n**📋 Main Topics**\n*   **Dashboard Updates:** Discussion on visual improvements (summary cards, platform badges), responsiveness (grid for mobile), and performance optimizations.\n*   **User Experience Enhancements:** Addressing a spacing issue, optimizing transition animation speed, and adding a warning icon to the delete confirmation dialog.\n\n**✅ Action Items**\n*   **Decision:** Reduce transition animation duration from 300ms to 200ms.\n*   **Action:** Add a warning icon to the delete confirmation dialog.\n*   **Decision:** The dashboard is ready for demo and deployment.\n*   **Next Steps:** Bob will implement the warning icon. The dashboard will be shipped.\n\n**💡 Key Takeaways**\n*   The team has made significant visual and functional improvements to the dashboard.\n*   Performance and user experience concerns have been identified and addressed.\n*   The dashboard is deemed ready for its next stage.\n*   No immediate follow-ups are explicitly stated beyond the immediate action items.",

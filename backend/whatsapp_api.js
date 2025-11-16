@@ -767,66 +767,169 @@ Provide a clear summary in 3-5 bullet points.`;
         `   💭 Using ${contextCount} conversation messages (excluding summaries, showing last 30)`
       );
 
-      // --- NEW RAG-POWERED BOT LOGIC ---
+      // --- NEW RAG-POWERED BOT LOGIC WITH PERSONALITY-INFUSED RESPONSES ---
 
       // 1. Find the project/team mapping
       const mapping = projectMapping[chat.id._serialized];
-      if (!mapping) {
+
+      let ragData = null;
+      let answer = null;
+
+      // 2. Try RAG first if chat is mapped to get factual data
+      if (mapping) {
+        // Build the payload for our backend-server
+        const ragPayload = {
+          project_id: mapping.project_id,
+          team_id: mapping.team_id,
+          question: messageText, // The user's message
+        };
+
+        // 3. Call the RAG server's "ask" endpoint
         console.log(
-          `[RAG-BOT] Chat ${chat.id._serialized} is mentioned, but not in project_mapping.json. Ignoring.`
+          `[RAG-BOT] Sending question to RAG server: "${messageText}"`
         );
-        return; // Not a "registered" chat, so bot won't reply
-      }
+        try {
+          const ragResponse = await axios.post(
+            "http://localhost:3000/api/v1/ask",
+            ragPayload
+          );
+          const ragAnswer = ragResponse.data.answer;
 
-      // 2. Build the payload for our backend-server
-      const ragPayload = {
-        project_id: mapping.project_id,
-        team_id: mapping.team_id,
-        question: messageText, // The user's message
-      };
+          console.log(
+            `[RAG-BOT] Received answer: ${ragAnswer.substring(0, 100)}...`
+          );
 
-      // 3. Call the RAG server's "ask" endpoint
-      console.log(`[RAG-BOT] Sending question to RAG server: "${messageText}"`);
-      try {
-        const ragResponse = await axios.post(
-          "http://localhost:3000/api/v1/ask",
-          ragPayload
-        );
-        const answer = ragResponse.data.answer;
+          // Check if RAG found relevant information (not a generic "I don't know" response)
+          const answerLower = ragAnswer.toLowerCase();
+          const isGenericNoAnswer =
+            answerLower.includes("don't have") ||
+            answerLower.includes("do not have") ||
+            answerLower.includes("don't know") ||
+            answerLower.includes("do not know") ||
+            answerLower.includes("no information") ||
+            answerLower.includes("can't find") ||
+            answerLower.includes("cannot find") ||
+            answerLower.includes("couldn't find") ||
+            answerLower.includes("could not find") ||
+            answerLower.includes("not found") ||
+            answerLower.includes("no context") ||
+            answerLower.includes("no relevant") ||
+            answerLower.includes("unable to find") ||
+            answerLower.includes("no specific information") ||
+            answerLower.includes("i don't have access") ||
+            answerLower.includes("not available in") ||
+            (answerLower.length < 50 && answerLower.includes("sorry"));
 
-        console.log(
-          `[RAG-BOT] Received answer: ${answer.substring(0, 100)}...`
-        );
-
-        // Add to conversationMemory (so the bot's old logic still works)
-        conversationMemory[chatId].push({
-          sender: "Bot",
-          text: answer,
-          timestamp: Date.now() / 1000,
-        });
-
-        // Keep only last 50 messages
-        if (conversationMemory[chatId].length > 50) {
-          conversationMemory[chatId] = conversationMemory[chatId].slice(-50);
+          if (!isGenericNoAnswer) {
+            ragData = ragAnswer;
+            console.log(
+              `[RAG-BOT] Found relevant data, will combine with personality`
+            );
+          } else {
+            console.log(
+              `[RAG-BOT] RAG returned generic no-answer, using pure chatbot`
+            );
+          }
+        } catch (err) {
+          console.error("❌ RAG-BOT Error:", err.message);
+          console.log(`[RAG-BOT] Error querying RAG, using pure chatbot`);
         }
-
-        // Record the response for spam protection
-        recordBotResponse(chat.id._serialized);
-
-        // Reply to the message
-        await message.reply(answer);
-        console.log(`✅ Bot (RAG) responded in ${chat.name}`);
-      } catch (err) {
-        console.error("❌ RAG-BOT Error:", err.message);
-        await message.reply(
-          "I'm sorry, I had trouble finding an answer. Please try again."
+      } else {
+        console.log(
+          `[RAG-BOT] Chat ${chat.id._serialized} is not in project_mapping.json. Using pure chatbot mode.`
         );
       }
-      // --- END OF NEW RAG-POWERED BOT LOGIC ---
-    } catch (error) {
-      console.error("❌ Bot error:", error);
+
+      // 4. Generate response with personality (with or without RAG data)
+      console.log(
+        `[CHATBOT] Generating response with personality: ${personality.name}`
+      );
+
+      let prompt;
+      if (ragData) {
+        // Combine RAG data with personality
+        prompt = `${personality.prompt}
+
+Recent conversation history (your memory):
+${recentContext}
+
+IMPORTANT DATABASE INFORMATION about the question:
+${ragData}
+
+Current question from ${contact.pushname || contact.name || "User"}:
+${messageText}
+
+Respond to the question using the DATABASE INFORMATION above, but deliver it in your natural ${
+          personality.name
+        } style and personality. Make the technical information friendly and conversational while keeping it accurate. Include the factual details from the database but present them in your unique way.`;
+      } else {
+        // Pure chatbot response without RAG data
+        prompt = `${personality.prompt}
+
+Recent conversation history (your memory):
+${recentContext}
+
+Current question from ${contact.pushname || contact.name || "User"}:
+${messageText}
+
+Respond naturally and helpfully as ${
+          personality.name
+        }. If they ask about previous messages or "last chat", refer to the conversation history above. Keep your response concise but friendly.`;
+      }
+
+      console.log(
+        `   🤖 Generating ${
+          ragData ? "RAG-infused" : "pure"
+        } chatbot response...`
+      );
+      const model = getGeminiModel();
+      if (!model) {
+        await message.reply("⚠️ AI not configured. Please set GEMINI_API_KEY.");
+        return;
+      }
+
+      const result = await queueAIRequest(async () => {
+        const model = getGeminiModel();
+        return await retryWithBackoff(async (altModel) => {
+          const useModel = altModel || model;
+          return await useModel.generateContent(prompt);
+        });
+      }, 10); // High priority for bot responses
+
+      answer = result.response.text();
+      console.log(
+        `[CHATBOT] Generated response: ${answer.substring(0, 100)}...`
+      );
+
+      // 5. Send the response (personality-infused, with or without RAG data)
+      // Add to conversationMemory
+      conversationMemory[chatId].push({
+        sender: "Bot",
+        text: answer,
+        timestamp: Date.now() / 1000,
+      });
+
+      // Keep only last 50 messages
+      if (conversationMemory[chatId].length > 50) {
+        conversationMemory[chatId] = conversationMemory[chatId].slice(-50);
+      }
+
+      // Record the response for spam protection
+      recordBotResponse(chat.id._serialized);
+
+      // Reply to the message
+      await message.reply(answer);
+      console.log(
+        `✅ Bot responded in ${chat.name} (mode: ${
+          ragData ? "Personality + RAG Data" : "Pure Personality"
+        })`
+      );
+    } catch (err) {
+      console.error("❌ Message handling error:", err.message);
       try {
-        await message.reply("Something went wrong, try again in a bit!");
+        await message.reply(
+          "I'm sorry, I encountered an error. Please try again."
+        );
       } catch (e) {
         console.error("Failed to send error message:", e);
       }
