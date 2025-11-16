@@ -15,6 +15,10 @@ const path = require("path");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const sharp = require("sharp");
 
+const axios = require("axios");
+const projectMapping = require("./project_mapping.json");
+const INGEST_SERVER_URL = "http://localhost:3000/api/v1/ingest";
+
 // Load environment variables
 require("dotenv").config();
 
@@ -467,6 +471,48 @@ function initializeClient() {
 
   // Message event for bot auto-responses
   client.on("message", async (message) => {
+    try {
+      const chatId = message.from;
+      const text = message.body;
+
+      // 1. Check if this chat is in our mapping file
+      const mapping = projectMapping[chatId];
+
+      // 2. If it is, and it has text, send it to the brain
+      if (mapping && text) {
+        console.log(
+          `[INGEST] Chat ${chatId} IS mapped. Sending to RAG server...`
+        );
+        const payload = {
+          project_id: mapping.project_id,
+          team_id: mapping.team_id,
+          source: "whatsapp",
+          text: text,
+        };
+
+        axios
+          .post(INGEST_SERVER_URL, payload)
+          .then(() => {
+            console.log(
+              `[INGEST] SUCCESS: Sent message from ${chatId} to RAG server.`
+            );
+          })
+          .catch((err) => {
+            console.error(
+              "[INGEST] FAILED to send to RAG server:",
+              err.message
+            );
+          });
+      } else if (text) {
+        // This is the new "loud" part
+        console.log(
+          `[INGEST] Chat ${chatId} is NOT in project_mapping.json. Ignoring.`
+        );
+      }
+    } catch (err) {
+      console.error("[INGEST] Error processing message for ingestion:", err);
+    }
+
     console.log(
       "📨 Message received:",
       message.from,
@@ -721,60 +767,62 @@ Provide a clear summary in 3-5 bullet points.`;
         `   💭 Using ${contextCount} conversation messages (excluding summaries, showing last 30)`
       );
 
-      // Generate AI response
-      const model = getGeminiModel();
-      if (!model) {
-        await message.reply("⚠️ AI not configured. Please set GEMINI_API_KEY.");
-        return;
+      // --- NEW RAG-POWERED BOT LOGIC ---
+
+      // 1. Find the project/team mapping
+      const mapping = projectMapping[chat.id._serialized];
+      if (!mapping) {
+        console.log(
+          `[RAG-BOT] Chat ${chat.id._serialized} is mentioned, but not in project_mapping.json. Ignoring.`
+        );
+        return; // Not a "registered" chat, so bot won't reply
       }
 
-      // Personality already loaded above - reuse it
+      // 2. Build the payload for our backend-server
+      const ragPayload = {
+        project_id: mapping.project_id,
+        team_id: mapping.team_id,
+        question: messageText, // The user's message
+      };
 
-      const prompt = `${personality.prompt}
+      // 3. Call the RAG server's "ask" endpoint
+      console.log(`[RAG-BOT] Sending question to RAG server: "${messageText}"`);
+      try {
+        const ragResponse = await axios.post(
+          "http://localhost:3000/api/v1/ask",
+          ragPayload
+        );
+        const answer = ragResponse.data.answer;
 
-Recent conversation (ONLY actual chat messages, NOT summaries):
-${recentContext}
+        console.log(
+          `[RAG-BOT] Received answer: ${answer.substring(0, 100)}...`
+        );
 
-Current question from ${contact.pushname || contact.name} (just now):
-${messageText}
-
-CRITICAL RULES:
-- Give a DIRECT, CONCISE answer to the current question ONLY
-- Don't reference or repeat any previous summaries you've given
-- Keep your response SHORT (1-3 sentences maximum)
-- Use timestamps to understand context if needed
-- Be helpful and straight to the point`;
-
-      console.log(`   🤖 Generating AI response...`);
-      const result = await queueAIRequest(async () => {
-        const model = getGeminiModel();
-        return await retryWithBackoff(async (altModel) => {
-          const useModel = altModel || model;
-          return await useModel.generateContent(prompt);
+        // Add to conversationMemory (so the bot's old logic still works)
+        conversationMemory[chatId].push({
+          sender: "Bot",
+          text: answer,
+          timestamp: Date.now() / 1000,
         });
-      }, 10); // High priority for bot responses
 
-      const response = result.response.text();
-      console.log(`   📤 Sending reply: ${response.substring(0, 100)}...`);
+        // Keep only last 50 messages
+        if (conversationMemory[chatId].length > 50) {
+          conversationMemory[chatId] = conversationMemory[chatId].slice(-50);
+        }
 
-      // Add bot's response to memory
-      conversationMemory[chatId].push({
-        sender: "Bot",
-        text: response,
-        timestamp: Date.now() / 1000,
-      });
+        // Record the response for spam protection
+        recordBotResponse(chat.id._serialized);
 
-      // Keep only last 50 messages (25 exchanges)
-      if (conversationMemory[chatId].length > 50) {
-        conversationMemory[chatId] = conversationMemory[chatId].slice(-50);
+        // Reply to the message
+        await message.reply(answer);
+        console.log(`✅ Bot (RAG) responded in ${chat.name}`);
+      } catch (err) {
+        console.error("❌ RAG-BOT Error:", err.message);
+        await message.reply(
+          "I'm sorry, I had trouble finding an answer. Please try again."
+        );
       }
-
-      // Record the response for spam protection
-      recordBotResponse(chat.id._serialized);
-
-      // Reply to the message
-      await message.reply(response);
-      console.log(`✅ Bot responded in ${chat.name}`);
+      // --- END OF NEW RAG-POWERED BOT LOGIC ---
     } catch (error) {
       console.error("❌ Bot error:", error);
       try {
@@ -1535,15 +1583,10 @@ IMPORTANT: Put each bullet point on a NEW LINE. Do NOT continue points on same l
   return summaryText;
 }
 
-// Q&A endpoint - Ask questions about analyzed chats
+// Q&A endpoint - NOW POWERED BY OUR RAG SERVER
 app.post("/api/chat-qa", async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: "WhatsApp not connected" });
-  }
-
-  const model = getGeminiModel();
-  if (!model) {
-    return res.status(503).json({ error: "Gemini AI not configured" });
   }
 
   const { chatId, question, messageLimit = 200 } = req.body;
@@ -1552,80 +1595,43 @@ app.post("/api/chat-qa", async (req, res) => {
     return res.status(400).json({ error: "chatId and question required" });
   }
 
+  console.log(`[RAG] New Q&A Request for chat: ${chatId}`);
+  console.log(`[RAG] Question: ${question}`);
+
+  // 1. Find the project/team mapping
+  const mapping = projectMapping[chatId];
+  if (!mapping) {
+    console.error(`[RAG] No project mapping found for chat: ${chatId}`);
+    return res
+      .status(404)
+      .json({ error: "This chat is not mapped to a project." });
+  }
+
+  // 2. Build the payload for our backend-server
+  const ragPayload = {
+    project_id: mapping.project_id,
+    team_id: mapping.team_id,
+    question: question,
+  };
+
+  // 3. Call the RAG server's "ask" endpoint
   try {
-    console.log(`🤔 Q&A Request for chat: ${chatId}`);
-    console.log(`❓ Question: ${question}`);
+    // We point to our other server: http://localhost:3000
+    const ragResponse = await axios.post(
+      "http://localhost:3000/api/v1/ask",
+      ragPayload
+    );
 
-    // Fetch chat messages for context
-    const chat = await client.getChatById(chatId);
-    const messages = await chat.fetchMessages({
-      limit: parseInt(messageLimit),
-    });
-
-    const textMessages = messages
-      .filter((m) => m.body && m.body.trim())
-      .map((m) => {
-        const authorNumber = m.author
-          ? m.author.split("@")[0]
-          : m.from
-          ? m.from.split("@")[0]
-          : "Unknown";
-        return {
-          body: m.body,
-          authorName: authorNumber,
-          timestamp: m.timestamp,
-        };
-      });
-
-    console.log(`📝 Context: ${textMessages.length} messages`);
-
-    // Build context for AI
-    const messageContext = textMessages
-      .map((m) => `${m.authorName}: ${m.body}`)
-      .join("\n");
-
-    const qaPrompt = `WhatsApp chat: "${chat.name || chat.id.user}" (${
-      textMessages.length
-    } messages)
-
-Messages:
-${messageContext}
-
-Question: ${question}
-
-Provide a SHORT, PRECISE answer (2-4 sentences max):
-- Answer directly, no fluff
-- Quote specific messages if relevant (use "Name: quote")
-- If not in messages, say "Not mentioned in chat"
-
-Be CONCISE and DIRECT.`;
-
-    console.log("🤖 Sending Q&A to Gemini AI...");
-    const result = await queueAIRequest(async () => {
-      const model = getGeminiModel();
-      return await retryWithBackoff(
-        async (altModel) => {
-          const useModel = altModel || model;
-          return await useModel.generateContent(qaPrompt);
-        },
-        3,
-        2000
-      );
-    }, 5); // Medium-high priority for Q&A
-
-    const response = await result.response;
-    const answer = response.text();
-
-    console.log("✅ Answer generated");
-
+    // 4. Send the RAG server's answer directly to the frontend
+    console.log("[RAG] Answer generated:", ragResponse.data.answer);
     res.json({
-      question,
-      answer,
-      chatName: chat.name || chat.id.user,
-      contextMessages: textMessages.length,
+      question: question,
+      answer: ragResponse.data.answer,
+      chatName: mapping.project_id, // Use project_id as a placeholder
+      contextMessages: 0, // We don't know this, so we send 0
     });
   } catch (err) {
-    console.error("❌ Q&A Error:", err.message);
+    console.error("❌ RAG Q&A Error:", err.message);
     res.status(500).json({
       error: "Failed to answer question",
       message: err.message,

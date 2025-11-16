@@ -1,10 +1,4 @@
 {
-  "enabled": false,
-  "groups": [
-    {
-      "id": "120363423106786959@g.us",
-      "name": "Gear 5",
-      "personality": "chill"
-    }
-  ]
+  "enabled": true,
+  "groups": []
 }
